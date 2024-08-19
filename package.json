@@ -1,0 +1,32 @@
+{
+  "name": "DC-codeleet",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/projeto-de-algoritmos-2024/DC-codeleet.git",
+  "author": "Leonardo Lago Moreno <leleolagomoreno@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "next": "^14.2.5",
+    "puppeteer": "^23.1.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.14.12",
+    "@types/puppeteer": "^7.0.4",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "tsx": "^4.17.0",
+    "typescript": "^5.5.4"
+  }
+}
