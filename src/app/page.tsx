@@ -6,6 +6,7 @@ export default function RandomWordPage() {
   const [error, setError] = useState<string | null>(null);
   const [userGuess, setUserGuess] = useState<string>("");
   const [resultMessage, setResultMessage] = useState<string | null>(null);
+  const [similarity, setSimilarity] = useState<number | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -49,9 +50,12 @@ export default function RandomWordPage() {
       }
       const data = await response.json();
 
-      setResultMessage(
-        data.result ? "Correct! You guessed the word!" : "Incorrect! Try again."
-      );
+      if (data.result) {
+        setResultMessage("Correct! You guessed the word!");
+      } else {
+        setResultMessage("Incorrect! Try again.");
+        setSimilarity(data.similarity);
+      }
     } catch (error) {
       setError("Failed to check the word");
     }
@@ -64,6 +68,7 @@ export default function RandomWordPage() {
   return (
     <div className="container">
       <h1 className="title">Guess the Word</h1>
+      <h1 className="word">{word}</h1>
 
       <div className="input-container">
         <input
@@ -75,7 +80,12 @@ export default function RandomWordPage() {
         <button onClick={handleGuess}>Submit Guess</button>
       </div>
 
-      {resultMessage && <p className="result-message">{resultMessage}</p>}
+      {resultMessage && (
+        <p className="result-message">
+          {resultMessage}
+          {similarity !== null && <span> (Similarity: {similarity})</span>}
+        </p>
+      )}
     </div>
   );
 }
