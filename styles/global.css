@@ -7,10 +7,16 @@
   background-color: #121212;
   color: #ffffff;
   font-family: Arial, sans-serif;
+  padding: 20px;
+  max-width: 10000px;
+  margin: auto;
+  border-radius: 10px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
 }
 
 .title {
   font-size: 2rem;
+  text-align: center;
   margin-bottom: 20px;
 }
 
@@ -20,11 +26,12 @@
   align-items: center;
   gap: 10px;
   margin-top: 20px;
+  margin-bottom: 20px;
 }
 
 input {
   padding: 10px;
-  border: none;
+  border: 1px solid #ccc;
   border-radius: 5px;
   font-size: 1rem;
   width: 200px;
@@ -34,21 +41,35 @@ input {
 
 button {
   padding: 10px 20px;
-  border: none;
   border-radius: 5px;
-  background-color: #6200ea;
-  color: #ffffff;
+  border: none;
   font-size: 1rem;
   cursor: pointer;
+  color: white;
+  background-color: #28a745;
 }
 
-button:hover {
-  background-color: #3700b3;
+button:disabled {
+  background-color: #777;
+  cursor: not-allowed;
+}
+
+button:not(:disabled):hover {
+  background-color: #218838;
 }
 
 .result-message {
   margin-top: 20px;
+  margin-bottom: 20px;
   font-size: 1.2rem;
+  text-align: center;
+  font-weight: bold;
+}
+
+.input-error {
+  margin-top: 10px;
+  color: #ff0033;
+  font-size: 1rem;
 }
 
 .guesses-list {
@@ -67,70 +88,6 @@ button:hover {
   margin-top: 20px;
 }
 
-.container {
-  font-family: Arial, sans-serif;
-  padding: 20px;
-  max-width: 10000px;
-  margin: auto;
-  background-color: #1a1a1a;
-  color: rgb(255, 255, 255);
-  border-radius: 10px;
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
-}
-
-.title {
-  text-align: center;
-  margin-bottom: 20px;
-}
-
-.input-container {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-input[type="text"] {
-  padding: 10px;
-  border-radius: 5px;
-  border: 1px solid #ccc;
-  font-size: 16px;
-}
-
-button {
-  padding: 10px;
-  border-radius: 5px;
-  border: none;
-  font-size: 16px;
-  cursor: pointer;
-  color: white;
-}
-
-button:disabled {
-  background-color: #777;
-  cursor: not-allowed;
-}
-
-button:not(:disabled) {
-  background-color: #28a745;
-}
-
-button:not(:disabled):hover {
-  background-color: #218838;
-}
-
-.result-message {
-  text-align: center;
-  margin-bottom: 20px;
-  font-size: 18px;
-  font-weight: bold;
-}
-
-.guesses-list {
-  list-style-type: none;
-  padding: 0;
-}
-
 .guess-item {
   display: flex;
   justify-content: space-between;
@@ -141,7 +98,6 @@ button:not(:disabled):hover {
   border: 2px solid #ccc;
   color: white;
   font-weight: bold;
-
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
 }
 
@@ -153,4 +109,3 @@ button:not(:disabled):hover {
 .guess-score {
   font-size: 16px;
 }
-

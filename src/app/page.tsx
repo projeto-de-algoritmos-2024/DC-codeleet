@@ -13,6 +13,7 @@ export default function RandomWordPage() {
   const [resultMessage, setResultMessage] = useState<string | null>(null);
   const [guesses, setGuesses] = useState<Guess[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [inputError, setInputError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchRandomWord();
@@ -23,6 +24,7 @@ export default function RandomWordPage() {
     setResultMessage(null);
     setGuesses([]);
     setUserGuess("");
+    setInputError(null);
 
     try {
       const response = await fetch("/api/word");
@@ -43,7 +45,15 @@ export default function RandomWordPage() {
   const handleGuess = async () => {
     if (!word) return;
 
+    if (userGuess.trim() === "") {
+      setInputError(
+        "Por favor, escreva uma palavra antes de enviar seu palpite."
+      );
+      return;
+    }
+
     setLoading(true);
+    setInputError(null);
 
     try {
       const response = await fetch(
@@ -122,6 +132,7 @@ export default function RandomWordPage() {
             </button>
           </div>
 
+          {inputError && <p className="input-error">{inputError}</p>}
           {resultMessage && <p className="result-message">{resultMessage}</p>}
 
           <h2>Palpites Tentados:</h2>
