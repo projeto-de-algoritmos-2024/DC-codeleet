@@ -1,12 +1,18 @@
 "use client";
 import { useEffect, useState } from "react";
 
+interface Guess {
+  word: string;
+  similarity: number;
+}
+
 export default function RandomWordPage() {
   const [word, setWord] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [userGuess, setUserGuess] = useState<string>("");
   const [resultMessage, setResultMessage] = useState<string | null>(null);
-  const [similarity, setSimilarity] = useState<number | null>(null);
+  const [guesses, setGuesses] = useState<Guess[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     let isMounted = true;
@@ -15,16 +21,19 @@ export default function RandomWordPage() {
       try {
         const response = await fetch("/api/word");
         if (!response.ok) {
-          throw new Error("Failed to fetch the word");
+          throw new Error("Falha ao buscar a palavra");
         }
         const data = await response.json();
 
         if (isMounted) {
-          setWord(data.word);
+          const decodedWord = decodeURIComponent(data.word);
+          setWord(decodedWord);
+          setLoading(false);
         }
       } catch (error) {
         if (isMounted) {
-          setError("Failed to fetch the random word");
+          setError("Falha ao buscar a palavra aleatória");
+          setLoading(false);
         }
       }
     }
@@ -39,6 +48,8 @@ export default function RandomWordPage() {
   const handleGuess = async () => {
     if (!word) return;
 
+    setLoading(true);
+
     try {
       const response = await fetch(
         `/api/checkWord?baseWord=${encodeURIComponent(
@@ -46,45 +57,74 @@ export default function RandomWordPage() {
         )}&word=${encodeURIComponent(userGuess)}`
       );
       if (!response.ok) {
-        throw new Error("Failed to check the word");
+        throw new Error("Falha ao verificar a palavra");
       }
       const data = await response.json();
 
+      const similarityScore = data.similarity * 10;
+
       if (data.result) {
-        setResultMessage("Correct! You guessed the word!");
+        setResultMessage("Correto! Você acertou a palavra!");
       } else {
-        setResultMessage("Incorrect! Try again.");
-        setSimilarity(data.similarity);
+        const guess: Guess = {
+          word: userGuess,
+          similarity: Math.round(similarityScore),
+        };
+
+        setGuesses((prevGuesses) => [...prevGuesses, guess]);
+        setResultMessage("Incorreto! Tente novamente.");
       }
     } catch (error) {
-      setError("Failed to check the word");
+      setError("Falha ao verificar a palavra");
+    } finally {
+      setLoading(false);
     }
   };
 
+  const handleGiveUp = () => {
+    setResultMessage(`Você desistiu! A palavra era: ${word}`);
+    setGuesses([]);
+  };
+
   if (error) {
-    return <div className="error">Error: {error}</div>;
+    return <div className="error">Erro: {error}</div>;
   }
 
   return (
     <div className="container">
-      <h1 className="title">Guess the Word</h1>
-      <h1 className="word">{word}</h1>
+      <h1 className="title">Adivinhe a Palavra</h1>
 
-      <div className="input-container">
-        <input
-          type="text"
-          placeholder="Enter your guess"
-          value={userGuess}
-          onChange={(e) => setUserGuess(e.target.value)}
-        />
-        <button onClick={handleGuess}>Submit Guess</button>
-      </div>
+      {loading && <p className="loading-message">Carregando...</p>}
 
-      {resultMessage && (
-        <p className="result-message">
-          {resultMessage}
-          {similarity !== null && <span> (Similarity: {similarity})</span>}
-        </p>
+      {!loading && (
+        <>
+          <div className="input-container">
+            <input
+              type="text"
+              placeholder="Digite seu palpite"
+              value={userGuess}
+              onChange={(e) => setUserGuess(e.target.value)}
+              disabled={loading}
+            />
+            <button onClick={handleGuess} disabled={loading}>
+              {loading ? "Verificando..." : "Enviar Palpite"}
+            </button>
+            <button onClick={handleGiveUp} disabled={loading}>
+              Desistir
+            </button>
+          </div>
+
+          {resultMessage && <p className="result-message">{resultMessage}</p>}
+
+          <h2>Palpites Tentados:</h2>
+          <ul className="guesses-list">
+            {guesses.map((guess, index) => (
+              <li key={index}>
+                {guess.word} - Similaridade: {guess.similarity}/10
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </div>
   );

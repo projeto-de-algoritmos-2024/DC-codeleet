@@ -10,13 +10,12 @@ export async function GET(request: Request) {
 
     await page.goto(`${baseUrl}`);
 
-    const randomWord = await page.evaluate(() => {
-      const randomWordDiv = document.querySelector('h1 > strong') as HTMLElement;
+    console.log(page.url().split('/').pop());
 
-      const randomWord = randomWordDiv.innerText;
-      return randomWord;
-    }); 
+    const randomWord = page.url().split('/').pop();
+
     await browser.close();
+
     return Response.json({word: randomWord});
   } catch (error) {
     console.error('Error checking word:', error);

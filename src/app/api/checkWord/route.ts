@@ -39,61 +39,109 @@ export async function GET(request: NextRequest) {
 
 async function getRelatedWords(browser: Browser, word: string) {
   const page = await browser.newPage();
-
   const baseUrl = `https://dicionariocriativo.com.br`;
 
-  const parsedWord = word.toLowerCase();
-  const urlEncodedWord = encodeURIComponent(parsedWord);
+  try {
+    await page.goto(`${baseUrl}/analogico/${word}`);
+    await page.waitForSelector('.blockList > .grid-100', { timeout: 5000 });
+  } catch (error) {
+    console.error(`Failed to load the initial page for word: ${word}`, error);
+    return []; 
+  }
 
-  await page.goto(`${baseUrl}/analogico/${urlEncodedWord}`);
+  const relatedWordsSet = new Set<string>();
 
-  await page.waitForSelector('.blockList > .grid-100');
+  try {
+    const relatedWords = await page.evaluate(() => {
+      const relatedWordsDivs = document.querySelectorAll('.blockList > .grid-100 > a') as NodeListOf<HTMLAnchorElement>;
+      const words = [] as string[];
 
-  const relatedWords = await page.evaluate(() => {
-    const relatedWordsDivs = document.querySelectorAll('.blockList > .grid-100 > a');
-    const relatedWords = [] as string[];
+      relatedWordsDivs.forEach(relatedWordsDiv => {
+        const relatedWord = relatedWordsDiv.innerText;
+        words.push(relatedWord);
+      });
 
-    relatedWordsDivs.forEach(relatedWordsDiv => {
-      const relatedWord = relatedWordsDiv.innerText;
-      relatedWords.push(relatedWord);
+      return words;
     });
 
-    return relatedWords;
+    relatedWords.forEach(word => relatedWordsSet.add(word));
+  } catch (error) {
+    console.error(`Failed to extract related words from the initial page for word: ${word}`, error);
+  }
+
+  console.log("Got related words", Array.from(relatedWordsSet));
+
+  const additionalPagesLinks = await page.evaluate(() => {
+    const links = document.querySelectorAll('#typeChange > .hlist > li > a') as NodeListOf<HTMLAnchorElement>;
+    const urls = [] as string[];
+
+    links.forEach(link => {
+      const isDisabled = link.classList.contains('disabled');
+      const isActive = link.classList.contains('active');
+      if (!isDisabled && !isActive) {
+        urls.push(link.href);
+      }
+    });
+
+    return urls;
   });
 
-  
+  for (const url of additionalPagesLinks) {
+    console.log("Visiting", url);
+    try {
+      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 5000 });
+      await page.waitForSelector('.blockList > .grid-100', { timeout: 5000 });
 
-  return relatedWords;
+      const moreRelatedWords = await page.evaluate(() => {
+        const relatedWordsDivs = document.querySelectorAll('.blockList > .grid-100 > a') as NodeListOf<HTMLAnchorElement>;
+        const words = [] as string[];
+
+        relatedWordsDivs.forEach(relatedWordsDiv => {
+          const relatedWord = relatedWordsDiv.innerText;
+          words.push(relatedWord);
+        });
+
+        return words;
+      });
+
+      moreRelatedWords.forEach(word => relatedWordsSet.add(word));
+    } catch (error) {
+      console.error(`Failed to load or extract related words from page: ${url}`, error);
+    }
+  }
+
+  const uniqueRelatedWords = Array.from(relatedWordsSet);
+  console.log(uniqueRelatedWords);
+  return uniqueRelatedWords;
 }
 
 
 function mergeAndCount(arr: { word: string; index: number }[], tempArr: { word: string; index: number }[], left: number, mid: number, right: number) {
-  let i = left;   // Starting index for left subarray
-  let j = mid + 1; // Starting index for right subarray
-  let k = left;   // Starting index to be sorted
+  let i = left;
+  let j = mid;
+  let k = left;
+
+  console.log("mergeAndCount", left, mid, right);
+
   let invCount = 0;
 
-  // Conditions are checked to ensure that i doesn't exceed mid and j doesn't exceed right
   while (i <= mid && j <= right) {
     if (arr[i].index <= arr[j].index) {
       tempArr[k++] = arr[i++];
     } else {
       tempArr[k++] = arr[j++];
-      invCount = invCount + (mid - i + 1);
+      invCount = invCount + (mid - i);
     }
   }
 
-  // Copy the remaining elements of left subarray, if any
   while (i <= mid) {
     tempArr[k++] = arr[i++];
   }
 
-  // Copy the remaining elements of right subarray, if any
   while (j <= right) {
     tempArr[k++] = arr[j++];
   }
 
-  // Copy the sorted subarray into Original array
   for (i = left; i <= right; i++) {
     arr[i] = tempArr[i];
   }
@@ -119,17 +167,33 @@ function getInversionCount(arr: { word: string; index: number }[]): number {
   return countInversions(arr, tempArr, 0, arr.length - 1);
 }
 
-// Função para comparar a similaridade entre correctRelatedWords e relatedWords
+function interpretSimilarity(inversionCount: number, matchedWordsCount: number, totalWords: number, correctTotalWords: number): number {
+  if (matchedWordsCount === 0) {
+    return 0;
+  }
+
+  const maxInversions = (matchedWordsCount * (matchedWordsCount - 1)) / 2;
+
+  const orderSimilarity = 1 - (inversionCount / maxInversions);
+
+  const proportionSimilarity = matchedWordsCount / Math.max(totalWords, correctTotalWords);
+
+  const similarity = (orderSimilarity + proportionSimilarity) / 2;
+
+  return similarity;
+}
 function checkSimilarity(correctRelatedWords: string[], relatedWords: string[]): number {
-  // Ordena a lista correctRelatedWords conforme a lista relatedWords
   const orderedCorrectWords = relatedWords.map(word => ({
     word,
     index: correctRelatedWords.indexOf(word),
-  }));
-  console.log(orderedCorrectWords);
-  // Conta o número de inversões
+  })).filter(word => word.index !== -1);
+  console.log("orderedCorrectWords", orderedCorrectWords);
   const inversionCount = getInversionCount(orderedCorrectWords);
 
-  return inversionCount;
+  console.log("inversionCount", inversionCount, orderedCorrectWords.length);
+
+  const similarity = interpretSimilarity(inversionCount, orderedCorrectWords.length, relatedWords.length, correctRelatedWords.length);
+  console.log("similarity", similarity);
+  return similarity;
 }
 
