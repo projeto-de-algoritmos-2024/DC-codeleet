@@ -15,35 +15,30 @@ export default function RandomWordPage() {
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    let isMounted = true;
-
-    async function fetchRandomWord() {
-      try {
-        const response = await fetch("/api/word");
-        if (!response.ok) {
-          throw new Error("Falha ao buscar a palavra");
-        }
-        const data = await response.json();
-
-        if (isMounted) {
-          const decodedWord = decodeURIComponent(data.word);
-          setWord(decodedWord);
-          setLoading(false);
-        }
-      } catch (error) {
-        if (isMounted) {
-          setError("Falha ao buscar a palavra aleatória");
-          setLoading(false);
-        }
-      }
-    }
-
     fetchRandomWord();
-
-    return () => {
-      isMounted = false;
-    };
   }, []);
+
+  async function fetchRandomWord() {
+    setLoading(true);
+    setResultMessage(null);
+    setGuesses([]);
+    setUserGuess("");
+
+    try {
+      const response = await fetch("/api/word");
+      if (!response.ok) {
+        throw new Error("Falha ao buscar a palavra");
+      }
+      const data = await response.json();
+
+      const decodedWord = decodeURIComponent(data.word);
+      setWord(decodedWord);
+      setLoading(false);
+    } catch (error) {
+      setError("Falha ao buscar a palavra aleatória");
+      setLoading(false);
+    }
+  }
 
   const handleGuess = async () => {
     if (!word) return;
@@ -86,6 +81,16 @@ export default function RandomWordPage() {
     setGuesses([]);
   };
 
+  const handleNewWord = () => {
+    fetchRandomWord();
+  };
+
+  function getColorBasedOnSimilarity(similarity: number): string {
+    const green = Math.round((similarity / 10) * 255);
+    const red = 255 - green;
+    return `rgb(${red}, ${green}, 0)`;
+  }
+
   if (error) {
     return <div className="error">Erro: {error}</div>;
   }
@@ -112,6 +117,9 @@ export default function RandomWordPage() {
             <button onClick={handleGiveUp} disabled={loading}>
               Desistir
             </button>
+            <button onClick={handleNewWord} disabled={loading}>
+              Nova Palavra
+            </button>
           </div>
 
           {resultMessage && <p className="result-message">{resultMessage}</p>}
@@ -119,7 +127,13 @@ export default function RandomWordPage() {
           <h2>Palpites Tentados:</h2>
           <ul className="guesses-list">
             {guesses.map((guess, index) => (
-              <li key={index}>
+              <li
+                key={index}
+                className="guess-item"
+                style={{
+                  backgroundColor: getColorBasedOnSimilarity(guess.similarity),
+                }}
+              >
                 {guess.word} - Similaridade: {guess.similarity}/10
               </li>
             ))}
