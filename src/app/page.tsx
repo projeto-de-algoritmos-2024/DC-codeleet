@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import confetti from "canvas-confetti";
 
 interface Guess {
   word: string;
@@ -14,6 +15,7 @@ export default function RandomWordPage() {
   const [guesses, setGuesses] = useState<Guess[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [inputError, setInputError] = useState<string | null>(null);
+  const [fadeOut, setFadeOut] = useState<boolean>(false);
 
   useEffect(() => {
     fetchRandomWord();
@@ -25,6 +27,7 @@ export default function RandomWordPage() {
     setGuesses([]);
     setUserGuess("");
     setInputError(null);
+    setFadeOut(false);
 
     try {
       const response = await fetch("/api/word");
@@ -70,6 +73,7 @@ export default function RandomWordPage() {
 
       if (data.result) {
         setResultMessage("Correto! Você acertou a palavra!");
+        triggerConfetti();
       } else {
         const guess: Guess = {
           word: userGuess,
@@ -88,7 +92,10 @@ export default function RandomWordPage() {
 
   const handleGiveUp = () => {
     setResultMessage(`Você desistiu! A palavra era: ${word}`);
-    setGuesses([]);
+    setFadeOut(true);
+    setTimeout(() => {
+      setGuesses([]);
+    }, 1000); // Espera 1 segundo (tempo da animação) antes de limpar os palpites
   };
 
   const handleNewWord = () => {
@@ -99,6 +106,14 @@ export default function RandomWordPage() {
     const green = Math.round((similarity / 10) * 255);
     const red = 255 - green;
     return `rgb(${red}, ${green}, 0)`;
+  }
+
+  function triggerConfetti() {
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 },
+    });
   }
 
   if (error) {
@@ -133,7 +148,11 @@ export default function RandomWordPage() {
           </div>
 
           {inputError && <p className="input-error">{inputError}</p>}
-          {resultMessage && <p className="result-message">{resultMessage}</p>}
+          {resultMessage && (
+            <p className={`result-message ${fadeOut ? "fade-out" : ""}`}>
+              {resultMessage}
+            </p>
+          )}
 
           <h2>Palpites Tentados:</h2>
           <ul className="guesses-list">
